@@ -1,11 +1,18 @@
-# Deepfake Audio Detection Project
+# Multi-Modal Deepfake Detection System
 
 ## Overview
-ALL CREDITS GO TO https://github.com/noorchauhan/DeepFake-Audio-Detection-MFCC
-Find the Paper [here](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9996362)
 
-We trained an open source model from Github that uses MFCC features to detect real or fake audio. This model was developed 2 years ago and uses "Fake-or-Real" dataset of 195,000 combined audio samples. The model is highly accurate but the issue is that they use a dataset that is consisting of only TTS generated audio, ever since then deepfake or AI generated audios have advanced to mimic real human voice, and this model was not previously trained on those. (https://github.com/noorchauhan/DeepFake-Audio-Detection-MFCC)
-For that reason, more datasets were used.
+This project provides a comprehensive **multi-modal deepfake detection system** that can analyze three types of media:
+
+1. **🎵 Audio Detection** - Detects AI-generated/deepfake audio using MFCC features
+2. **📝 Text Detection** - Identifies fake news using TF-IDF and machine learning
+3. **🎬 Video Detection** - Detects deepfake videos using MobileNetV2 frame analysis
+
+### Audio Detection Credits
+Audio detection model credits: https://github.com/noorchauhan/DeepFake-Audio-Detection-MFCC
+Research Paper: [IEEE Access](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9996362)
+
+The audio model uses MFCC features to detect real or fake audio. Originally developed using the "Fake-or-Real" dataset of 195,000 combined audio samples, we've expanded it with additional datasets to handle modern AI-generated voices.
 
 
 ## Citation
@@ -14,17 +21,30 @@ Abstract: Deepfake content is created or altered synthetically using artificial 
 keywords: {Deepfakes;Deep learning;Speech synthesis;Training data;Feature extraction;Machine learning algorithms;Data models;Acoustics;Deepfakes;deepfake audio;synthetic audio;machine learning;acoustic data},
 URL: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=9996362&isnumber=9668973
 
+## Features
+
+- **Multi-Modal Detection**: Analyze audio, text, and video files
+- **Web Interface**: Beautiful, modern web UI with tabbed interface
+- **RESTful API**: Separate endpoints for each media type
+- **High Accuracy**: Uses state-of-the-art ML models (SVM, MLP)
+- **Easy to Use**: Drag-and-drop file upload or paste text directly
+
 ## Installation
-To initialize the project, follow these steps:
 
-1. Clone the repository to your local machine:
-   ```
-   git clone https://github.com/your-username/deepfake-audio-detection.git
-   cd deepfake-audio-detection
+### Prerequisites
+- Python 3.8 or higher
+- pip package manager
+
+### Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/deepfake-media-detection.git
+   cd deepfake-media-detection
    ```
 
-2. Set up a virtual environment (optional but recommended):
-   ```
+2. Create a virtual environment (recommended):
+   ```bash
    # For Windows
    python -m venv venv
    venv\Scripts\activate
@@ -34,33 +54,106 @@ To initialize the project, follow these steps:
    source venv/bin/activate
    ```
 
-3. Install the required dependencies
-
-## How to Use Training the Model
-To train the SVM model with the provided data, follow these steps:
-
-1. Run the training script:
-   ```
-   python main.py
-   ```
-   After sucessfully running the main script, it will initially ask you to provide the path of the voice to analyze, provide it with the path and the
-2. Run the web app by:
-   ```
-   python app.py
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
    ```
 
-   The training script will extract MFCC features from the audio files, split the data into training and testing sets, scale the features, train the SVM model, and save the trained model and scaler for future use.
+## Training Models
 
-### Analyzing Audio
-To classify an audio file as genuine or deepfake, follow these steps:
+### 1. Train Audio Detection Model
 
-1. Ensure the trained model and scaler are available (already saved during training).
+```bash
+python main.py
+```
 
-2. Run the analysis script:
-   ```
-   python analyze_audio.py path/to/your/audio/file.wav
-   ```
+This trains an SVM model using MFCC features from audio files in `data/azvoices/`.
 
-   Replace `path/to/your/audio/file.wav` with the path to the audio file you want to analyze. The script will extract MFCC features from the audio, scale the features using the saved scaler, pass the features to the trained SVM model, and display the classification result.
+### 2. Train Text Detection Model
+
+```bash
+python train_text_model.py
+```
+
+This creates a text fake news detection model using TF-IDF features. By default, it uses sample data. To use your own dataset, place a CSV file with 'text' and 'label' columns and update the script.
+
+### 3. Train Video Detection Model (Optional)
+
+```bash
+python train_video_model.py
+```
+
+**Note**: Video detection requires:
+- TensorFlow installed (`pip install tensorflow`)
+- Video files organized in `data/video/real/` and `data/video/fake/`
+- Sufficient GPU/CPU resources (frame extraction is computationally intensive)
+
+## Running the Web Application
+
+Start the Flask server:
+
+```bash
+python app.py
+```
+
+The server will start on `http://localhost:5000`. Open this URL in your browser to access the web interface.
+
+### Available Endpoints
+
+- **GET** `/` - Main web interface with tabs for all three modes
+- **POST** `/predict/audio` - Analyze audio files
+- **POST** `/predict/text` - Analyze text content
+- **POST** `/predict/video` - Analyze video files
+- **GET** `/status` - Check which models are available
+
+## Usage
+
+### Via Web Interface
+
+1. Open `http://localhost:5000` in your browser
+2. Select the appropriate tab (Audio, Text, or Video)
+3. Upload your file or paste text
+4. Click "Analyze" and view results with confidence scores
+
+### Via API
+
+#### Audio Detection
+```bash
+curl -X POST -F "file=@audio.mp3" http://localhost:5000/predict/audio
+```
+
+#### Text Detection
+```bash
+curl -X POST -F "text=Your text here" http://localhost:5000/predict/text
+```
+
+#### Video Detection
+```bash
+curl -X POST -F "file=@video.mp4" http://localhost:5000/predict/video
+```
+
+## Supported File Formats
+
+- **Audio**: MP3, WAV, OGG, FLAC, M4A
+- **Text**: TXT files or direct text input
+- **Video**: MP4, AVI, MOV, MKV, FLV, WMV
+
+## Model Details
+
+### Audio Detection
+- **Features**: MFCC (Mel-Frequency Cepstral Coefficients)
+- **Model**: Support Vector Machine (SVM) with linear kernel
+- **Input**: Audio files up to 100MB
+
+### Text Detection
+- **Features**: TF-IDF (Term Frequency-Inverse Document Frequency)
+- **Model**: SVM with linear kernel & Multi-Layer Perceptron (MLP)
+- **Input**: Text content (any length)
+
+### Video Detection
+- **Features**: MobileNetV2 pre-trained on ImageNet
+- **Model**: SVM with RBF kernel
+- **Process**: Extracts 30 frames per video, averages features
+- **Input**: Video files up to 100MB
 
 
