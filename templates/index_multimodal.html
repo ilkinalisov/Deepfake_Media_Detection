@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Modal Deepfake Detection</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #f5f5f5;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: #ebebeb;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 40px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f9f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .text-input-area {
+            margin-bottom: 20px;
+        }
+
+        .text-input-area textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .text-input-area textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.real {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+
+        .result.fake {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .result.real .result-title {
+            color: #28a745;
+        }
+
+        .result.fake .result-title {
+            color: #dc3545;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            transition: width 1s ease;
+        }
+
+        .result.real .confidence-fill {
+            background: #28a745;
+        }
+
+        .result.fake .confidence-fill {
+            background: #dc3545;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        .spinner.show {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .selected-file {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f0ff;
+            border-radius: 8px;
+            display: none;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .selected-file.show {
+            display: block;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .tab {
+                padding: 15px 10px;
+                font-size: 0.9rem;
+            }
+
+            .tab-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Multi-Modal Deepfake Detection</h1>
+            <p>Detect AI-generated content in Audio, Text, and Video</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('audio')">🎵 Audio</button>
+            <button class="tab" onclick="switchTab('text')">📝 Text</button>
+            <button class="tab" onclick="switchTab('video')">🎬 Video</button>
+        </div>
+
+        <!-- Audio Tab -->
+        <div id="audio-content" class="tab-content active">
+            <div class="upload-area" id="audio-upload" onclick="document.getElementById('audio-input').click()">
+                <div class="upload-icon">🎵</div>
+                <div class="upload-text">Drop your audio file here or click to browse</div>
+                <div class="upload-subtext">Supported formats: MP3, WAV, OGG, FLAC, M4A (Max 100MB)</div>
+            </div>
+            <input type="file" id="audio-input" class="file-input" accept=".mp3,.wav,.ogg,.flac,.m4a">
+            <div class="selected-file" id="audio-file-name"></div>
+            <button class="btn" id="audio-btn" onclick="analyzeAudio()" disabled>Analyze Audio</button>
+            <div class="spinner" id="audio-spinner"></div>
+            <div class="error" id="audio-error"></div>
+            <div class="result" id="audio-result"></div>
+        </div>
+
+        <!-- Text Tab -->
+        <div id="text-content" class="tab-content">
+            <div class="text-input-area">
+                <textarea id="text-input" placeholder="Paste your text here or upload a .txt file..."></textarea>
+            </div>
+            <div class="upload-area" id="text-upload" onclick="document.getElementById('text-file-input').click()">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Or upload a text file</div>
+                <div class="upload-subtext">Supported format: TXT</div>
+            </div>
+            <input type="file" id="text-file-input" class="file-input" accept=".txt">
+            <div class="selected-file" id="text-file-name"></div>
+            <button class="btn" id="text-btn" onclick="analyzeText()">Analyze Text</button>
+            <div class="spinner" id="text-spinner"></div>
+            <div class="error" id="text-error"></div>
+            <div class="result" id="text-result"></div>
+
+            <div class="info-box">
+                <h3>About Text Detection</h3>
+                <p>This model analyzes text content to determine if it's likely fake news or real news using TF-IDF features and machine learning.</p>
+            </div>
+        </div>
+
+        <!-- Video Tab -->
+        <div id="video-content" class="tab-content">
+            <div class="upload-area" id="video-upload" onclick="document.getElementById('video-input').click()">
+                <div class="upload-icon">🎬</div>
+                <div class="upload-text">Drop your video file here or click to browse</div>
+                <div class="upload-subtext">Supported formats: MP4, AVI, MOV, MKV (Max 100MB)</div>
+            </div>
+            <input type="file" id="video-input" class="file-input" accept=".mp4,.avi,.mov,.mkv,.flv,.wmv">
+            <div class="selected-file" id="video-file-name"></div>
+            <button class="btn" id="video-btn" onclick="analyzeVideo()" disabled>Analyze Video</button>
+            <div class="spinner" id="video-spinner"></div>
+            <div class="error" id="video-error"></div>
+            <div class="result" id="video-result"></div>
+
+            <div class="info-box">
+                <h3>About Video Detection</h3>
+                <p>This model analyzes video frames using MobileNetV2 to detect deepfake videos. The analysis may take a minute for longer videos.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioFile = null;
+        let textFile = null;
+        let videoFile = null;
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + '-content').classList.add('active');
+        }
+
+        // Audio handling
+        document.getElementById('audio-input').addEventListener('change', function(e) {
+            audioFile = e.target.files[0];
+            if (audioFile) {
+                document.getElementById('audio-file-name').textContent = '📎 ' + audioFile.name;
+                document.getElementById('audio-file-name').classList.add('show');
+                document.getElementById('audio-btn').disabled = false;
+            }
+        });
+
+        // Text file handling
+        document.getElementById('text-file-input').addEventListener('change', function(e) {
+            textFile = e.target.files[0];
+            if (textFile) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('text-input').value = event.target.result;
+                };
+                reader.readAsText(textFile);
+                document.getElementById('text-file-name').textContent = '📎 ' + textFile.name;
+                document.getElementById('text-file-name').classList.add('show');
+            }
+        });
+
+        // Video handling
+        document.getElementById('video-input').addEventListener('change', function(e) {
+            videoFile = e.target.files[0];
+            if (videoFile) {
+                document.getElementById('video-file-name').textContent = '📎 ' + videoFile.name;
+                document.getElementById('video-file-name').classList.add('show');
+                document.getElementById('video-btn').disabled = false;
+            }
+        });
+
+        // Drag and drop for audio
+        const audioUpload = document.getElementById('audio-upload');
+        audioUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            audioUpload.classList.add('dragover');
+        });
+        audioUpload.addEventListener('dragleave', () => {
+            audioUpload.classList.remove('dragover');
+        });
+        audioUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            audioUpload.classList.remove('dragover');
+            audioFile = e.dataTransfer.files[0];
+            document.getElementById('audio-file-name').textContent = '📎 ' + audioFile.name;
+            document.getElementById('audio-file-name').classList.add('show');
+            document.getElementById('audio-btn').disabled = false;
+        });
+
+        // Drag and drop for video
+        const videoUpload = document.getElementById('video-upload');
+        videoUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            videoUpload.classList.add('dragover');
+        });
+        videoUpload.addEventListener('dragleave', () => {
+            videoUpload.classList.remove('dragover');
+        });
+        videoUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            videoUpload.classList.remove('dragover');
+            videoFile = e.dataTransfer.files[0];
+            document.getElementById('video-file-name').textContent = '📎 ' + videoFile.name;
+            document.getElementById('video-file-name').classList.add('show');
+            document.getElementById('video-btn').disabled = false;
+        });
+
+        // Analysis functions
+        async function analyzeAudio() {
+            if (!audioFile) return;
+
+            const formData = new FormData();
+            formData.append('file', audioFile);
+
+            document.getElementById('audio-spinner').classList.add('show');
+            document.getElementById('audio-btn').disabled = true;
+            document.getElementById('audio-result').classList.remove('show');
+            document.getElementById('audio-error').classList.remove('show');
+
+            try {
+                const response = await fetch('/predict/audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showError('audio', data.error);
+                } else {
+                    showResult('audio', data.prediction, data.confidence);
+                }
+            } catch (error) {
+                showError('audio', 'Failed to analyze audio: ' + error.message);
+            } finally {
+                document.getElementById('audio-spinner').classList.remove('show');
+                document.getElementById('audio-btn').disabled = false;
+            }
+        }
+
+        async function analyzeText() {
+            const textContent = document.getElementById('text-input').value.trim();
+
+            if (!textContent) {
+                showError('text', 'Please enter some text to analyze');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('text', textContent);
+
+            document.getElementById('text-spinner').classList.add('show');
+            document.getElementById('text-btn').disabled = true;
+            document.getElementById('text-result').classList.remove('show');
+            document.getElementById('text-error').classList.remove('show');
+
+            try {
+                const response = await fetch('/predict/text', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showError('text', data.error);
+                } else {
+                    showResult('text', data.prediction, data.confidence);
+                }
+            } catch (error) {
+                showError('text', 'Failed to analyze text: ' + error.message);
+            } finally {
+                document.getElementById('text-spinner').classList.remove('show');
+                document.getElementById('text-btn').disabled = false;
+            }
+        }
+
+        async function analyzeVideo() {
+            if (!videoFile) return;
+
+            const formData = new FormData();
+            formData.append('file', videoFile);
+
+            document.getElementById('video-spinner').classList.add('show');
+            document.getElementById('video-btn').disabled = true;
+            document.getElementById('video-result').classList.remove('show');
+            document.getElementById('video-error').classList.remove('show');
+
+            try {
+                const response = await fetch('/predict/video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    showError('video', data.error);
+                } else {
+                    showResult('video', data.prediction, data.confidence);
+                }
+            } catch (error) {
+                showError('video', 'Failed to analyze video: ' + error.message);
+            } finally {
+                document.getElementById('video-spinner').classList.remove('show');
+                document.getElementById('video-btn').disabled = false;
+            }
+        }
+
+        function showResult(type, prediction, confidence) {
+            const resultDiv = document.getElementById(type + '-result');
+            resultDiv.className = 'result show ' + prediction;
+
+            const emoji = prediction === 'real' ? '✅' : '⚠️';
+            const title = prediction === 'real' ? 'Likely Real' : 'Likely AI-Generated/Fake';
+
+            resultDiv.innerHTML = `
+                <div class="result-title">${emoji} ${title}</div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: ${confidence}%">
+                        ${confidence}% Confidence
+                    </div>
+                </div>
+            `;
+        }
+
+        function showError(type, message) {
+            const errorDiv = document.getElementById(type + '-error');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('show');
+        }
+    </script>
+</body>
+</html>
