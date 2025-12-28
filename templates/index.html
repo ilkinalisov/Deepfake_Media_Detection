@@ -3,70 +3,485 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deepfake Detection</title>
+    <title>Deepfake Audio Detection</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f1f1f1;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            padding: 20px;
         }
 
         .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+        }
+
+        .header {
             text-align: center;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
         }
 
-        h1 {
-            color: #333333;
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
         }
 
-        p {
-            color: #666666;
+        .header .icon {
+            font-size: 64px;
+            margin-bottom: 10px;
         }
 
-        input[type="file"] {
-            margin-top: 15px;
+        .subtitle {
+            color: #666;
+            font-size: 16px;
         }
 
-        button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: #ffffff;
-            border: none;
-            border-radius: 4px;
+        .upload-section {
+            margin: 30px 0;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 50px 30px;
+            text-align: center;
             cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
         }
 
-        button:hover {
-            background-color: #0056b3;
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
         }
 
-        .message {
-            color: #ff0000;
-            margin-top: 10px;
+        .upload-area.dragging {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .file-info {
+            display: none;
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #4caf50;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #2e7d32;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .analyze-btn.show {
+            display: block;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loader.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .result-section.real {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 2px solid #28a745;
+        }
+
+        .result-section.fake {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 2px solid #dc3545;
+        }
+
+        .result-icon {
+            font-size: 80px;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .result-section.real .result-title {
+            color: #155724;
+        }
+
+        .result-section.fake .result-title {
+            color: #721c24;
+        }
+
+        .result-description {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .confidence-bar {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.real {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+
+        .progress-fill.fake {
+            background: linear-gradient(90deg, #dc3545, #e83e8c);
+        }
+
+        .reset-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info-box h3 {
+            color: #856404;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .info-box p {
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Deepfake Audio Detection</h1>
-        <p>Upload a .wav audio file to check if it's a deepfake.</p>
-        <form action="/" method="post" enctype="multipart/form-data">
-            <input type="file" name="audio_file" accept=".wav">
-            <button type="submit">Analyze</button>
-        </form>
-        {% if message %}
-        <p class="message">{{ message }}</p>
-        {% endif %}
+        <div class="header">
+            <div class="icon">🎭</div>
+            <h1>Deepfake Audio Detection</h1>
+            <p class="subtitle">AI-powered detection to identify synthetic or manipulated audio</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">🎵</div>
+                <p class="upload-text">Click to upload or drag & drop</p>
+                <p class="upload-hint">Supported: MP3, WAV, OGG (Max 10MB)</p>
+            </div>
+            <input type="file" id="fileInput" accept="audio/*">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-name" id="fileName"></div>
+            <div class="file-size" id="fileSize"></div>
+        </div>
+
+        <button class="analyze-btn" id="analyzeBtn">
+            🔍 Analyze Audio
+        </button>
+
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <p style="color: #667eea; font-weight: 600;">Analyzing audio...</p>
+            <p style="color: #999; font-size: 14px;">This may take a few seconds</p>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-icon" id="resultIcon"></div>
+            <div class="result-title" id="resultTitle"></div>
+            <p class="result-description" id="resultDescription"></p>
+            
+            <div class="confidence-bar">
+                <div class="confidence-label">
+                    <span>Confidence</span>
+                    <span id="confidenceValue">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <button class="reset-btn" onclick="resetApp()">Analyze Another Audio</button>
+        </div>
+
+        <div class="info-box">
+            <h3>ℹ️ How it works</h3>
+            <p>This system uses machine learning (SVM classifier) to analyze audio features and detect deepfake or synthetic audio. It examines spectral characteristics, MFCCs, and other audio signatures that differ between real and AI-generated speech.</p>
+        </div>
     </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loader = document.getElementById('loader');
+        const resultSection = document.getElementById('resultSection');
+        
+        let selectedFile = null;
+
+        // Upload area click
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('audio/')) {
+                handleFile(file);
+            } else {
+                alert('Please upload an audio file');
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        // Handle file selection
+        function handleFile(file) {
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File too large. Maximum size is 10MB');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = `📄 ${file.name}`;
+            fileSize.textContent = `Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            fileInfo.classList.add('show');
+            analyzeBtn.classList.add('show');
+            resultSection.classList.remove('show');
+        }
+
+        // Analyze button click
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            // Hide previous results
+            resultSection.classList.remove('show');
+            analyzeBtn.disabled = true;
+            loader.classList.add('show');
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('audio', selectedFile);
+
+            try {
+                // Send to Flask backend
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                loader.classList.remove('show');
+                displayResult(result);
+            } catch (error) {
+                loader.classList.remove('show');
+                alert('Error analyzing audio. Make sure the Flask server is running on http://localhost:5000');
+                console.error('Error:', error);
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        // Display results
+        function displayResult(result) {
+            const isReal = result.prediction.toLowerCase() === 'real' || result.prediction === 0;
+            const confidence = result.confidence || 85; // Default confidence if not provided
+
+            // Set result class
+            resultSection.className = 'result-section show ' + (isReal ? 'real' : 'fake');
+
+            // Set icon and text
+            if (isReal) {
+                document.getElementById('resultIcon').textContent = '✅';
+                document.getElementById('resultTitle').textContent = 'Authentic Audio';
+                document.getElementById('resultDescription').textContent = 'This audio appears to be genuine human speech.';
+                document.getElementById('progressFill').className = 'progress-fill real';
+            } else {
+                document.getElementById('resultIcon').textContent = '⚠️';
+                document.getElementById('resultTitle').textContent = 'Deepfake Detected';
+                document.getElementById('resultDescription').textContent = 'This audio shows signs of being AI-generated or manipulated.';
+                document.getElementById('progressFill').className = 'progress-fill fake';
+            }
+
+            // Set confidence
+            document.getElementById('confidenceValue').textContent = confidence + '%';
+            document.getElementById('progressFill').style.width = confidence + '%';
+
+            analyzeBtn.disabled = false;
+        }
+
+        // Reset application
+        function resetApp() {
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.classList.remove('show');
+            analyzeBtn.classList.remove('show');
+            resultSection.classList.remove('show');
+            analyzeBtn.disabled = false;
+        }
+    </script>
 </body>
 </html>

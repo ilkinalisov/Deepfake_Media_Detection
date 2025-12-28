@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Speed Processor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f8f9ff;
+        }
+
+        .upload-area.dragging {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .controls.active {
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .speed-display {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            /* -webkit-appearance: none; */
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #764ba2;
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f2ff;
+            color: #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e3ff;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-info {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .file-duration {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .output-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f2ff;
+        }
+
+        .output-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        audio {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .status.processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Audio Speed Processor</h1>
+        <p class="subtitle">Upload an MP3 file and adjust its playback speed</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <p><strong>Click to upload</strong> or drag and drop</p>
+            <p style="font-size: 12px; color: #999; margin-top: 10px;">MP3, WAV, OGG supported</p>
+        </div>
+        <input type="file" id="fileInput" accept="audio/*">
+
+        <div class="controls" id="controls">
+            <div class="file-info" id="fileInfo"></div>
+
+            <div class="control-group">
+                <label>
+                    Playback Speed
+                    <span class="speed-display" id="speedDisplay">1.0x</span>
+                </label>
+                <input type="range" id="speedControl" min="0.5" max="3" step="0.1" value="1">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-top: 5px;">
+                    <span>0.5x (Slower)</span>
+                    <span>3.0x (Faster)</span>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-primary" id="playBtn" disabled>▶️ Play</button>
+                <button class="btn-secondary" id="pauseBtn" disabled>⏸️ Pause</button>
+                <button class="btn-secondary" id="stopBtn" disabled>⏹️ Stop</button>
+            </div>
+
+            <div class="output-section">
+                <div class="output-label">Processed Audio Output:</div>
+                <audio id="outputAudio" controls></audio>
+            </div>
+
+            <div id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const controls = document.getElementById('controls');
+        const speedControl = document.getElementById('speedControl');
+        const speedDisplay = document.getElementById('speedDisplay');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const outputAudio = document.getElementById('outputAudio');
+        const fileInfo = document.getElementById('fileInfo');
+        const status = document.getElementById('status');
+
+        // Audio context and source
+        let audioContext;
+        let audioBuffer;
+        let sourceNode;
+        let isPlaying = false;
+        let currentFileName = '';
+
+        // Initialize Audio Context
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Upload area interactions
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('audio/')) {
+                handleFile(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        // Handle file upload
+        async function handleFile(file) {
+            showStatus('Processing audio file...', 'processing');
+            currentFileName = file.name;
+
+            try {
+                initAudioContext();
+                
+                const arrayBuffer = await file.arrayBuffer();
+                audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                // Display file info
+                const duration = audioBuffer.duration;
+                const minutes = Math.floor(duration / 60);
+                const seconds = Math.floor(duration % 60);
+                fileInfo.innerHTML = `
+                    <div class="file-name">📄 ${file.name}</div>
+                    <div class="file-duration">Duration: ${minutes}:${seconds.toString().padStart(2, '0')}</div>
+                `;
+
+                // Show controls
+                controls.classList.add('active');
+                playBtn.disabled = false;
+                stopBtn.disabled = false;
+
+                // Set up output audio element with original file
+                const url = URL.createObjectURL(file);
+                outputAudio.src = url;
+                outputAudio.playbackRate = parseFloat(speedControl.value);
+
+                showStatus('Audio loaded successfully!', 'success');
+                setTimeout(() => hideStatus(), 2000);
+            } catch (error) {
+                showStatus('Error loading audio: ' + error.message, 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Speed control
+        speedControl.addEventListener('input', (e) => {
+            const speed = parseFloat(e.target.value);
+            speedDisplay.textContent = speed.toFixed(1) + 'x';
+            
+            // Update both the Web Audio API source and HTML audio element
+            if (sourceNode) {
+                sourceNode.playbackRate.value = speed;
+            }
+            if (outputAudio.src) {
+                outputAudio.playbackRate = speed;
+            }
+        });
+
+        // Play button
+        playBtn.addEventListener('click', () => {
+            if (!isPlaying) {
+                playAudio();
+            }
+        });
+
+        // Pause button
+        pauseBtn.addEventListener('click', () => {
+            if (isPlaying && sourceNode) {
+                audioContext.suspend();
+                pauseBtn.textContent = '▶️ Resume';
+                isPlaying = false;
+            } else if (!isPlaying && sourceNode) {
+                audioContext.resume();
+                pauseBtn.textContent = '⏸️ Pause';
+                isPlaying = true;
+            }
+        });
+
+        // Stop button
+        stopBtn.addEventListener('click', () => {
+            stopAudio();
+        });
+
+        // Play audio with Web Audio API
+        function playAudio() {
+            if (sourceNode) {
+                sourceNode.stop();
+            }
+
+            sourceNode = audioContext.createBufferSource();
+            sourceNode.buffer = audioBuffer;
+            sourceNode.playbackRate.value = parseFloat(speedControl.value);
+            sourceNode.connect(audioContext.destination);
+
+            sourceNode.onended = () => {
+                isPlaying = false;
+                playBtn.disabled = false;
+                pauseBtn.disabled = true;
+                pauseBtn.textContent = '⏸️ Pause';
+            };
+
+            sourceNode.start(0);
+            isPlaying = true;
+            playBtn.disabled = true;
+            pauseBtn.disabled = false;
+            pauseBtn.textContent = '⏸️ Pause';
+        }
+
+        // Stop audio
+        function stopAudio() {
+            if (sourceNode) {
+                sourceNode.stop();
+                sourceNode = null;
+            }
+            if (audioContext) {
+                audioContext.resume();
+            }
+            isPlaying = false;
+            playBtn.disabled = false;
+            pauseBtn.disabled = true;
+            pauseBtn.textContent = '⏸️ Pause';
+        }
+
+        // Status messages
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+        }
+
+        function hideStatus() {
+            status.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
