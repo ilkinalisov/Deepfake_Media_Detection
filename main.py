@@ -126,14 +126,15 @@ def train_model(X, y):
         svm_classifier.fit(X_train_scaled, y_train)
 
     # Save the trained SVM model and scaler
-    model_filename = "svm_model.pkl"
-    scaler_filename = "scaler.pkl"
+    model_filename = "models/audio_svm.pkl"
+    scaler_filename = "models/audio_scaler.pkl"
+    os.makedirs("models", exist_ok=True)
     joblib.dump(svm_classifier, model_filename)
     joblib.dump(scaler, scaler_filename)
 
 def analyze_audio(input_audio_path):
-    model_filename = "svm_model.pkl"
-    scaler_filename = "scaler.pkl"
+    model_filename = "models/audio_svm.pkl"
+    scaler_filename = "models/audio_scaler.pkl"
     svm_classifier = joblib.load(model_filename)
     scaler = joblib.load(scaler_filename)
 

@@ -1,0 +1,81 @@
+{
+  "timestamp": "2026-02-01T22:01:12.685152",
+  "audio": {
+    "model": "SVM + MFCC Features",
+    "dataset": "azvoices",
+    "test_samples": 200,
+    "accuracy": 100.0,
+    "precision": 100.0,
+    "recall": 100.0,
+    "f1_score": 100.0,
+    "avg_confidence": 93.7,
+    "confusion_matrix": [
+      [
+        100,
+        0
+      ],
+      [
+        0,
+        100
+      ]
+    ],
+    "true_negatives": 100,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_positives": 100
+  },
+  "text": {
+    "model": "RoBERTa OpenAI Detector (roberta-base-openai-detector)",
+    "dataset": "Custom test set (20 human + 20 AI samples)",
+    "test_samples": 40,
+    "accuracy": 47.5,
+    "precision": 33.33,
+    "recall": 5.0,
+    "f1_score": 8.7,
+    "avg_confidence": 90.16,
+    "confusion_matrix": [
+      [
+        18,
+        2
+      ],
+      [
+        19,
+        1
+      ]
+    ],
+    "true_negatives": 18,
+    "false_positives": 2,
+    "false_negatives": 19,
+    "true_positives": 1,
+    "published_metrics": {
+      "note": "Published by OpenAI for GPT-2 detection",
+      "gpt2_accuracy": "~95%",
+      "gpt4_accuracy": "~42% (RAID benchmark)",
+      "chatgpt_accuracy": "~65% (RAID benchmark)",
+      "limitation": "Trained on GPT-2; performance degrades on newer models"
+    }
+  },
+  "video": {
+    "model": "MobileNetV2 (ImageNet pretrained)",
+    "status": "PLACEHOLDER - NOT TRAINED FOR DEEPFAKE DETECTION",
+    "dataset": "N/A",
+    "test_samples": 0,
+    "accuracy": "N/A",
+    "precision": "N/A",
+    "recall": "N/A",
+    "f1_score": "N/A",
+    "note": "This model uses MobileNetV2 pretrained on ImageNet for feature extraction. It is NOT trained to detect deepfake videos. The current implementation returns random/mock results. To create a functional video deepfake detector, you would need to: (1) Collect a labeled dataset of real and deepfake videos (e.g., FaceForensics++, Celeb-DF, DFDC), (2) Extract frames and train a classifier on facial manipulation artifacts, (3) Consider using specialized architectures like EfficientNet-B4 or XceptionNet which perform better on deepfake detection tasks.",
+    "recommended_datasets": [
+      "FaceForensics++ (FF++)",
+      "Celeb-DF",
+      "DeepFake Detection Challenge (DFDC)",
+      "DeeperForensics-1.0"
+    ],
+    "recommended_models": [
+      "XceptionNet",
+      "EfficientNet-B4",
+      "Two-stream networks",
+      "Face X-ray"
+    ]
+  }
+}
